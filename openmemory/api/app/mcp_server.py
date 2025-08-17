@@ -20,6 +20,7 @@ import datetime
 import json
 import logging
 import uuid
+from typing import Annotated
 
 from app.database import SessionLocal
 from app.models import Memory, MemoryAccessLog, MemoryState, MemoryStatusHistory
@@ -31,6 +32,7 @@ from fastapi import FastAPI, Request
 from fastapi.routing import APIRouter
 from mcp.server.fastmcp import FastMCP
 from mcp.server.sse import SseServerTransport
+from pydantic import AliasChoices, Field
 from qdrant_client import models as qdrant_models
 
 # Load environment variables
@@ -58,8 +60,18 @@ mcp_router = APIRouter(prefix="/mcp")
 # Initialize SSE transport
 sse = SseServerTransport("/mcp/messages/")
 
-@mcp.tool(description="Add a new memory. This method is called everytime the user informs anything about themselves, their preferences, or anything that has any relevant information which can be useful in the future conversation. This can also be called when the user asks you to remember something.")
-async def add_memories(text: str) -> str:
+@mcp.tool(
+    description=(
+        "Add a new memory. This method is called everytime the user informs anything "
+        "about themselves, their preferences, or anything that has any relevant "
+        "information which can be useful in the future conversation. This can also be "
+        "called when the user asks you to remember something."
+    )
+)
+async def add_memories(
+    text: Annotated[str, Field(validation_alias=AliasChoices("text", "memory"))]
+) -> str:
+    """Create a new memory, accepting either `text` or legacy `memory` field."""
     uid = user_id_var.get(None)
     client_name = client_name_var.get(None)
 
