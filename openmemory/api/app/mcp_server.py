@@ -20,6 +20,7 @@ import datetime
 import json
 import logging
 import uuid
+from typing import Optional
 
 from app.database import SessionLocal
 from app.models import Memory, MemoryAccessLog, MemoryState, MemoryStatusHistory
@@ -59,7 +60,7 @@ mcp_router = APIRouter(prefix="/mcp")
 sse = SseServerTransport("/mcp/messages/")
 
 @mcp.tool(description="Add a new memory. This method is called everytime the user informs anything about themselves, their preferences, or anything that has any relevant information which can be useful in the future conversation. This can also be called when the user asks you to remember something.")
-async def add_memories(text: str) -> str:
+async def add_memories(text: Optional[str] = None, memory: Optional[str] = None) -> str:
     uid = user_id_var.get(None)
     client_name = client_name_var.get(None)
 
@@ -67,6 +68,11 @@ async def add_memories(text: str) -> str:
         return "Error: user_id not provided"
     if not client_name:
         return "Error: client_name not provided"
+
+    if text is None and memory is None:
+        return "Error: text not provided"
+
+    text = text or memory
 
     # Get memory client safely
     memory_client = get_memory_client_safe()

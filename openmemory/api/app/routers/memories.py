@@ -20,7 +20,7 @@ from app.utils.permissions import check_memory_access_permissions
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.sqlalchemy import paginate as sqlalchemy_paginate
-from pydantic import BaseModel
+from pydantic import BaseModel, root_validator
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
@@ -201,10 +201,19 @@ async def get_categories(
 
 class CreateMemoryRequest(BaseModel):
     user_id: str
-    text: str
+    text: Optional[str] = None
+    memory: Optional[str] = None
     metadata: dict = {}
     infer: bool = True
     app: str = "openmemory"
+
+    @root_validator(pre=True)
+    def populate_text(cls, values):
+        text = values.get("text") or values.get("memory")
+        if text is None:
+            raise ValueError("Either 'text' or 'memory' field is required")
+        values["text"] = text
+        return values
 
 
 # Create new memory
